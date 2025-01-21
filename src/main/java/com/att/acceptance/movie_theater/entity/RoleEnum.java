@@ -1,6 +1,6 @@
 package com.att.acceptance.movie_theater.entity;
 
 public enum RoleEnum {
-    ADMIN,
-    CUSTOMER
+    ROLE_ADMIN,
+    ROLE_CUSTOMER
 }

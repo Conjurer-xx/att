@@ -10,6 +10,7 @@ import com.att.acceptance.movie_theater.repository.ShowtimeRepository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,7 +40,7 @@ public class ShowtimeService {
         return showtime.orElseThrow(() -> new ShowtimeNotFoundException("Showtime not found with id: " + id));
     }
 
-    @Transactional
+    @PreAuthorize("hasRole('ROLE_ADMIN')") 
     public Showtime createShowtime(Showtime showtime) {
         Movie movie = movieRepository.findById(showtime.getMovie().getId())
                 .orElseThrow(() -> new MovieNotFoundException("Movie not found.")); 
@@ -62,7 +63,7 @@ public class ShowtimeService {
         return showtimeRepository.save(showtime);
     }
 
-    @Transactional
+    @PreAuthorize("hasRole('ROLE_ADMIN') and @showtimeService.canUpdateShowtime(#id)") 
     public Showtime updateShowtime(Long id, Showtime showtimeDetails) {
         Showtime showtime = service.getShowtimeById(id); // Call getShowtimeById via injected instance
 
@@ -83,7 +84,7 @@ public class ShowtimeService {
         return showtimeRepository.save(showtime);
     }
 
-    @Transactional
+    @PreAuthorize("hasRole('ROLE_ADMIN') and @showtimeService.canDeleteShowtime(#id)") 
     public void deleteShowtime(Long id) {
         service.getShowtimeById(id); // Call getShowtimeById to ensure showtime exists before deletion
         showtimeRepository.deleteById(id);

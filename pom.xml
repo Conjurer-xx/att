@@ -70,6 +70,34 @@
 			<artifactId>h2</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-core -->
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-core</artifactId>
+    <version>6.4.2</version>
+</dependency>
+<!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-web -->
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-web</artifactId>
+    <version>6.4.2</version>
+</dependency>
+<!-- https://mvnrepository.com/artifact/com.nimbusds/nimbus-jose-jwt -->
+<dependency>
+    <groupId>com.nimbusds</groupId>
+    <artifactId>nimbus-jose-jwt</artifactId>
+    <version>10.0.1</version>
+</dependency>
+
+<!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-config -->
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-config</artifactId>
+    <version>6.4.2</version>
+</dependency>
+
+
+
 		<!-- https://mvnrepository.com/artifact/org.springframework.security/spring-security-crypto -->
 <dependency>
     <groupId>org.springframework.security</groupId>

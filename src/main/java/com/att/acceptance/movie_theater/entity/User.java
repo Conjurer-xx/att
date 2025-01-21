@@ -23,8 +23,10 @@ public class User {
 
     @Email(message = "Invalid email format.")
     @NotBlank(message = "Email is required.")
+    @Column(unique = true) // Ensure email is unique
     private String email;
-    
+
+    @NotBlank(message = "Password is required.")
     private String password;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -34,9 +36,6 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    private Set<Booking> bookings = new HashSet<>();
 
     // Getters and Setters
 
@@ -78,14 +77,6 @@ public class User {
 
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
-    }
-
-    public Set<Booking> getBookings() {
-        return bookings;
-    }
-
-    public void setBookings(Set<Booking> bookings) {
-        this.bookings = bookings;
     }
 
     @Override

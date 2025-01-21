@@ -15,14 +15,24 @@ public class Role {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    private RoleEnum role;
+    private RoleEnum name;
 
-    @ManyToMany(mappedBy = "roles")
-    private Set<User> users = new HashSet<>();
 
-    // Getters and Setters
+    /**
+	 * @return the name
+	 */
+	public RoleEnum getName() {
+		return name;
+	}
 
-    public Long getId() {
+	/**
+	 * @param name the name to set
+	 */
+	public void setName(RoleEnum name) {
+		this.name = name;
+	}
+
+	public Long getId() {
         return id;
     }
 
@@ -30,21 +40,6 @@ public class Role {
         this.id = id;
     }
 
-    public RoleEnum getRole() {
-        return role;
-    }
-
-    public void setRole(RoleEnum role) {
-        this.role = role;
-    }
-
-    public Set<User> getUsers() {
-        return users;
-    }
-
-    public void setUsers(Set<User> users) {
-        this.users = users;
-    }
 
     @Override
     public boolean equals(Object o) {
@@ -63,7 +58,7 @@ public class Role {
     public String toString() {
         return "Role{" +
                 "id=" + id +
-                ", role=" + role +
+                ", role=" + name +
                 '}';
     }
 }

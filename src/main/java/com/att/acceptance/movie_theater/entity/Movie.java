@@ -1,16 +1,20 @@
 package com.att.acceptance.movie_theater.entity;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.Max;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-
-import java.util.Calendar;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
 
 @Entity
 @Table(name = "movies")

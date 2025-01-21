@@ -9,6 +9,7 @@ import com.att.acceptance.movie_theater.repository.UserRepository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,12 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
+
+    public User findUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+    }
+
     @Transactional(readOnly = true)
     public Page<User> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable); 
@@ -40,8 +47,8 @@ public class UserService {
 
     @Transactional
     public User createUser(User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword())); 
-        Role userRole = roleRepository.findByRole(RoleEnum.CUSTOMER).orElseThrow(() -> new RuntimeException("Customer role not found.")); 
+        user.setPassword(passwordEncoder.encode(user.getPassword())); // Hash the password
+        Role userRole = roleRepository.findByName(RoleEnum.ROLE_CUSTOMER).orElse(null); 
         user.getRoles().add(userRole); 
         return userRepository.save(user);
     }
