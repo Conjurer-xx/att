@@ -89,4 +89,15 @@ public class ShowtimeService {
         service.getShowtimeById(id); // Call getShowtimeById to ensure showtime exists before deletion
         showtimeRepository.deleteById(id);
     }
+    
+    /**
+     * Fetch all showtimes for a specific movie with pagination.
+     * 
+     * @param movieId Movie ID
+     * @param pageable Pagination details
+     * @return Paginated list of showtimes for the movie
+     */
+    public Page<Showtime> getShowtimesByMovie(Long movieId, Pageable pageable) {
+        return showtimeRepository.findByMovieId(movieId, pageable);
+    }
 }

@@ -21,10 +21,13 @@ import com.att.acceptance.movie_theater.entity.User;
 import com.att.acceptance.movie_theater.exception.BookingNotFoundException;
 import com.att.acceptance.movie_theater.exception.SeatNotAvailableException;
 import com.att.acceptance.movie_theater.exception.ShowtimeNotFoundException;
+import com.att.acceptance.movie_theater.exception.UserNotFoundException;
 import com.att.acceptance.movie_theater.repository.BookingRepository;
 import com.att.acceptance.movie_theater.repository.SeatAvailabilityRepository;
 import com.att.acceptance.movie_theater.repository.SeatRepository;
 import com.att.acceptance.movie_theater.repository.ShowtimeRepository;
+import com.att.acceptance.movie_theater.repository.UserRepository;
+import com.att.acceptance.movie_theater.security.SecurityUtils;
 
 @Service
 public class BookingService {
@@ -34,17 +37,20 @@ public class BookingService {
     private final ShowtimeRepository showtimeRepository;
     private final SeatRepository seatRepository;
     private final SeatAvailabilityRepository seatAvailabilityRepository;
+    private final UserRepository userRepository;
     private final UserService userService; 
 
     public BookingService(BookingRepository bookingRepository, 
                           ShowtimeRepository showtimeRepository, 
                           SeatRepository seatRepository, 
                           SeatAvailabilityRepository seatAvailabilityRepository, 
+                          UserRepository userRepository,
                           UserService userService) { 
         this.bookingRepository = bookingRepository;
         this.showtimeRepository = showtimeRepository;
         this.seatRepository = seatRepository;
         this.seatAvailabilityRepository = seatAvailabilityRepository;
+        this.userRepository = userRepository;
         this.userService = userService; 
     }
 
@@ -57,6 +63,18 @@ public class BookingService {
     public Booking getBookingById(Long id) {
         return bookingRepository.findById(id)
                 .orElseThrow(() -> new BookingNotFoundException(BOOKING_NOT_FOUND_WITH_ID + id));
+    }
+    
+    public Booking createBooking(Booking booking, Long userId) {
+        // Fetch the User object from the repository
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+        
+        // Set the user on the booking
+        booking.setUser(user);
+
+        // Save and return the booking
+        return bookingRepository.save(booking);
     }
 
     @Transactional
@@ -95,39 +113,42 @@ public class BookingService {
         return booking;
     }
 
-    @Transactional
-    public Booking updateBooking(Long id, Booking bookingDetails) {
-        // Retrieve the booking directly within the transaction
-        Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new BookingNotFoundException(BOOKING_NOT_FOUND_WITH_ID + id)); 
+    /**
+     * Update an existing booking with new details.
+     * 
+     * @param bookingId ID of the booking to update
+     * @param bookingDetails New booking details
+     * @param userId ID of the user making the update
+     * @return Updated booking
+     */
+    public Booking updateBooking(Long bookingId, Booking bookingDetails, Long userId) {
+        // Fetch the existing booking
+        Booking existingBooking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException("Booking not found with ID: " + bookingId));
 
-        if (bookingDetails.getSeat() != null && !bookingDetails.getSeat().getSeatNumber().equals(booking.getSeat().getSeatNumber())) { 
-            // Check if the new seat is available
-            Seat newSeat = seatRepository.findByShowtimeAndSeatNumber(booking.getShowtime(), bookingDetails.getSeat().getSeatNumber())
-                    .orElseThrow(() -> new RuntimeException("Seat not found.")); 
-
-            SeatAvailability newSeatAvailability = seatAvailabilityRepository.findByShowtimeAndSeatNumber(booking.getShowtime(), newSeat.getSeatNumber())
-                    .orElseThrow(() -> new SeatNotAvailableException("Seat is not available."));
-
-            if (!newSeatAvailability.getStatus().equals(AvailabilityStatusEnum.AVAILABLE)) {
-                throw new SeatNotAvailableException("Seat is already booked.");
-            }
-
-            // Update the old seat availability to AVAILABLE
-            SeatAvailability oldSeatAvailability = booking.getSeat().getSeatAvailability();
-            oldSeatAvailability.setStatus(AvailabilityStatusEnum.AVAILABLE);
-            seatAvailabilityRepository.save(oldSeatAvailability);
-
-            // Update the new seat availability to BOOKED
-            newSeatAvailability.setStatus(AvailabilityStatusEnum.BOOKED);
-            seatAvailabilityRepository.save(newSeatAvailability);
-
-            booking.setSeat(newSeat); 
+        // Check if the authenticated user is authorized
+        if (!existingBooking.getUser().getId().equals(userId) &&
+                !SecurityUtils.hasRole("ADMIN_ROLE")) {
+            throw new AccessDeniedException("You are not authorized to update this booking.");
         }
 
-        booking = bookingRepository.save(booking); 
+        // Seat availability check
+        if (!existingBooking.getSeat().getId().equals(bookingDetails.getSeat().getId()) ||
+                !existingBooking.getShowtime().getId().equals(bookingDetails.getShowtime().getId())) {
+            if (bookingRepository.existsBySeatIdAndShowtimeId(
+                    bookingDetails.getSeat().getId(), bookingDetails.getShowtime().getId())) {
+                throw new SeatNotAvailableException(
+                        "Seat is already booked for this showtime. Seat ID: " + bookingDetails.getSeat().getId());
+            }
+        }
 
-        return booking;
+        // Update booking details
+        existingBooking.setSeat(bookingDetails.getSeat());
+        existingBooking.setPrice(bookingDetails.getPrice());
+        existingBooking.setShowtime(bookingDetails.getShowtime());
+
+        // Save and return the updated booking
+        return bookingRepository.save(existingBooking);
     }
 
     @Transactional
@@ -185,4 +206,39 @@ public class BookingService {
     public List<Booking> getBookingsByUser(User user, Pageable pageable) {
         return bookingRepository.findByUser(user, pageable).getContent(); 
     }
+    
+    public void cancelBooking(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException("Booking not found with ID: " + bookingId));
+
+        booking.setStatus("CANCELLED"); // Update status
+        bookingRepository.save(booking);
+    }
+
+    public void confirmBooking(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException("Booking not found with ID: " + bookingId));
+
+        booking.setStatus("CONFIRMED"); // Update status
+        bookingRepository.save(booking);
+    }
+
+    public Double getTotalPrice(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException("Booking not found with ID: " + bookingId));
+
+        return booking.getPrice();
+    }
+    
+    /**
+     * Fetch all bookings for a specific user.
+     * 
+     * @param userId User ID
+     * @param pageable Pagination details
+     * @return Paginated list of bookings for the user
+     */
+    public Page<Booking> getCustomerBookings(Long userId, Pageable pageable) {
+        return bookingRepository.findByUserId(userId, pageable);
+    }
+    
 }

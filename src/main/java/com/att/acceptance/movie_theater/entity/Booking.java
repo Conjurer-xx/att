@@ -2,11 +2,18 @@ package com.att.acceptance.movie_theater.entity;
 
 import jakarta.persistence.*;
 
-import java.util.Objects;
-
+/**
+ * Entity representing a Booking in the movie theater system.
+ * Maps to the database table for bookings and includes relationships
+ * with User, Showtime, and Seat entities.
+ */
 @Entity
-@Table(name = "bookings")
+@Table(
+    name = "bookings",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"seat_id", "showtime_id"})
+)
 public class Booking {
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,18 +29,15 @@ public class Booking {
 
     @OneToOne
     @JoinColumn(name = "seat_id", unique = true, nullable = false)
-    private Seat seat; 
+    private Seat seat;
 
+    @Column(nullable = false)
+    private Double price;
 
-    public Showtime getShowtime() {
-        return showtime;
-    }
+    @Column(nullable = false, length = 20)
+    private String status = "PENDING";  // Default status: PENDING, CONFIRMED, CANCELLED
 
-    public void setShowtime(Showtime showtime) {
-        this.showtime = showtime;
-    }
-
-    // Getters and Setters
+    // Getters and setters
 
     public Long getId() {
         return id;
@@ -51,6 +55,14 @@ public class Booking {
         this.user = user;
     }
 
+    public Showtime getShowtime() {
+        return showtime;
+    }
+
+    public void setShowtime(Showtime showtime) {
+        this.showtime = showtime;
+    }
+
     public Seat getSeat() {
         return seat;
     }
@@ -59,24 +71,19 @@ public class Booking {
         this.seat = seat;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Booking booking = (Booking) o;
-        return Objects.equals(id, booking.id);
+    public Double getPrice() {
+        return price;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
+    public void setPrice(Double price) {
+        this.price = price;
     }
 
-	@Override
-	public String toString() {
-		return "Booking [id=" + id + ", user=" + user + ", showtime=" + showtime + ", seat=" + seat + "]";
-	}
+    public String getStatus() {
+        return status;
+    }
 
-
-    
+    public void setStatus(String status) {
+        this.status = status;
+    }
 }
