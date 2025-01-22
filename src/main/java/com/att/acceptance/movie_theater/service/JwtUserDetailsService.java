@@ -1,34 +1,40 @@
 package com.att.acceptance.movie_theater.service;
 
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import com.att.acceptance.movie_theater.entity.User;
+import com.att.acceptance.movie_theater.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.att.acceptance.movie_theater.entity.User;
-import com.att.acceptance.movie_theater.repository.UserRepository;
-
 @Service
-public class JwtUserDetailsService implements UserDetailsService {
+public class JwtUserDetailsService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final UserDetailsServiceImpl userDetailsServiceImpl;
 
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User Not Found with username: " + username));
+    public JwtUserDetailsService(UserRepository userRepository, UserDetailsServiceImpl userDetailsServiceImpl) {
+        this.userRepository = userRepository;
+        this.userDetailsServiceImpl = userDetailsServiceImpl;
+    }
 
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(), 
-                user.getPassword(), 
-                user.getRoles().stream()
-                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName())) 
-                        .collect(Collectors.toList())
-        );
+    /**
+     * Load a user by email for JWT validation.
+     *
+     * @param email The email of the user.
+     * @return The UserDetails object containing user information.
+     */
+    public UserDetails loadUserByEmail(String email) {
+        return userDetailsServiceImpl.loadUserByUsername(email);
+    }
+
+    /**
+     * Validate a user based on their email.
+     *
+     * @param email The email of the user.
+     * @return The User entity.
+     */
+    public User validateUserByEmail(String email) {
+        return userRepository.findByEmail(email).orElseThrow(() ->
+                new UsernameNotFoundException("User not found with email: " + email));
     }
 }

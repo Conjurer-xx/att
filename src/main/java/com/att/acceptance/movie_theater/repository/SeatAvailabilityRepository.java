@@ -1,30 +1,20 @@
 package com.att.acceptance.movie_theater.repository;
 
-import java.util.List;
-import java.util.Optional;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.att.acceptance.movie_theater.entity.AvailabilityStatusEnum;
 import com.att.acceptance.movie_theater.entity.SeatAvailability;
-import com.att.acceptance.movie_theater.entity.Showtime;
 
+
+/**
+ * Repository for accessing SeatAvailability entities.
+ */
 @Repository
 public interface SeatAvailabilityRepository extends JpaRepository<SeatAvailability, Long> {
-
-    @Query("SELECT s FROM SeatAvailability s WHERE s.showtime = :showtime AND s.seatNumber = :seatNumber")
-    Optional<SeatAvailability> findByShowtimeAndSeatNumber(Showtime showtime, String seatNumber);
-
-    @Query("SELECT s FROM SeatAvailability s WHERE s.showtime = :showtime")
-    List<SeatAvailability> findByShowtime(Showtime showtime);
-
-    @Query("SELECT s FROM SeatAvailability s WHERE s.showtime = :showtime AND s.status = :status")
-    List<SeatAvailability> findByShowtimeAndStatus(Showtime showtime, AvailabilityStatusEnum status); 
-
-    @Query("SELECT s FROM SeatAvailability s WHERE s.showtime = :showtime AND s.status = :status")
-    Page<SeatAvailability> findByShowtimeAndStatus(Showtime showtime, AvailabilityStatusEnum status, Pageable pageable); 
+    @Query("SELECT CASE WHEN COUNT(sa) > 0 THEN true ELSE false END FROM SeatAvailability sa WHERE sa.seatNumber = :seatNumber AND sa.showtime.id = :showtimeId")
+    boolean existsBySeatNumberAndShowtime_Id(@Param("seatNumber") String seatNumber, @Param("showtimeId") Long showtimeId);
 }
+
+

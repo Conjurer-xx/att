@@ -1,6 +1,9 @@
 package com.att.acceptance.movie_theater.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 /**
  * Entity representing a Booking in the movie theater system.
@@ -13,7 +16,6 @@ import jakarta.persistence.*;
     uniqueConstraints = @UniqueConstraint(columnNames = {"seat_id", "showtime_id"})
 )
 public class Booking {
-
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,10 +34,14 @@ public class Booking {
     private Seat seat;
 
     @Column(nullable = false)
-    private Double price;
+    @NotNull(message = "Price is required")
+    @Positive(message = "Price must be positive")
+    @Digits(integer = 5, fraction = 2, message = "Price can have up to 5 digits before the decimal and 2 after")
+    private float price;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String status = "PENDING";  // Default status: PENDING, CONFIRMED, CANCELLED
+    private BookingStatus status = BookingStatus.PENDING;
 
     // Getters and setters
 
@@ -71,19 +77,19 @@ public class Booking {
         this.seat = seat;
     }
 
-    public Double getPrice() {
+    public float getPrice() {
         return price;
     }
 
-    public void setPrice(Double price) {
+    public void setPrice(float price) {
         this.price = price;
     }
 
-    public String getStatus() {
+    public BookingStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(BookingStatus status) {
         this.status = status;
     }
 }

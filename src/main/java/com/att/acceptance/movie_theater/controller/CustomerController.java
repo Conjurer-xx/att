@@ -1,108 +1,79 @@
 package com.att.acceptance.movie_theater.controller;
 
-import java.util.List;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
+import com.att.acceptance.movie_theater.entity.Booking;
+import com.att.acceptance.movie_theater.service.BookingService;
+import com.att.acceptance.movie_theater.service.UserService;
+import com.att.acceptance.movie_theater.util.SecurityUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.att.acceptance.movie_theater.entity.Booking;
-import com.att.acceptance.movie_theater.entity.Seat;
-import com.att.acceptance.movie_theater.entity.Showtime;
-import com.att.acceptance.movie_theater.entity.User;
-import com.att.acceptance.movie_theater.service.BookingService;
-import com.att.acceptance.movie_theater.service.ShowtimeService;
-import com.att.acceptance.movie_theater.service.UserService;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import java.util.Set;
 
 @RestController
-@RequestMapping("/api/customers")
-@PreAuthorize("hasRole('ROLE_CUSTOMER')") // Ensure only customers can access these endpoints
+@RequestMapping("/customer")
+@Validated
 public class CustomerController {
 
     private final BookingService bookingService;
     private final UserService userService;
-    private final ShowtimeService showtimeService; 
-    
-    
 
-	/**
-	 * @param bookingService
-	 * @param userService
-	 * @param showtimeService
-	 */
-	public CustomerController(BookingService bookingService, UserService userService, ShowtimeService showtimeService) {
-		super();
-		this.bookingService = bookingService;
-		this.userService = userService;
-		this.showtimeService = showtimeService;
-	}
+    public CustomerController(BookingService bookingService, UserService userService) {
+        this.bookingService = bookingService;
+        this.userService = userService;
+    }
 
-
+    /**
+     * Get all bookings for the authenticated customer or all bookings if admin.
+     *
+     * @return A set of bookings for the customer or all bookings for admin.
+     */
+    @PreAuthorize("hasAnyRole('ROLE_CUSTOMER', 'ROLE_ADMIN')")
     @GetMapping("/bookings")
-    public ResponseEntity<List<Booking>> getMyBookings(Pageable pageable) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName(); 
-        User user = userService.findUserByEmail(username); 
-        return ResponseEntity.ok(bookingService.getBookingsByUser(user, pageable)); 
+    public ResponseEntity<Set<Booking>> getBookings() {
+        if (SecurityUtils.hasRole("ROLE_ADMIN")) {
+            return ResponseEntity.ok(bookingService.getAllBookings());
+        }
+        Long userId = SecurityUtils.getAuthenticatedUserId();
+        return ResponseEntity.ok(bookingService.getBookingsByUser(userId));
     }
 
-
+    /**
+     * Create a new booking for the authenticated customer.
+     *
+     * @param booking The booking to create.
+     * @return The created booking.
+     */
+    @PreAuthorize("hasAnyRole('ROLE_CUSTOMER', 'ROLE_ADMIN')")
     @PostMapping("/bookings")
-    public ResponseEntity<Booking> createBooking(@Valid @RequestBody BookingRequest bookingRequest) { 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName(); 
-        User user = userService.findUserByEmail(username); 
-
-        Showtime showtime = showtimeService.getShowtimeById(bookingRequest.showtimeId()); 
-
-	        // Create a Seat object 
-	        Seat seat = new Seat();
-	        seat.setSeatNumber(bookingRequest.seatNumber()); 
-	        // Set seat price (you might need to fetch seat price based on seat number and showtime)
-
-	        Booking booking = new Booking();
-	        booking.setUser(user);
-	        booking.setShowtime(showtime);
-	        booking.setSeat(seat); 
-
-	        return ResponseEntity.status(HttpStatus.CREATED).body(bookingService.createBooking(booking, user.getId(), showtime.getId()));
-	    }
-
-    @GetMapping("/showtimes")
-    public ResponseEntity<Page<Showtime>> getAllShowtimes(Pageable pageable) {
-        return ResponseEntity.ok(showtimeService.getAllShowtimes(pageable)); 
+    public ResponseEntity<Booking> createBooking(@Valid @RequestBody Booking booking) {
+        if (SecurityUtils.hasRole("ROLE_ADMIN")) {
+            Booking savedBooking = bookingService.createBooking(booking);
+            return ResponseEntity.ok(savedBooking);
+        }
+        Long userId = SecurityUtils.getAuthenticatedUserId();
+        booking.setUser(userService.getUserById(userId));
+        Booking savedBooking = bookingService.createBooking(booking);
+        return ResponseEntity.ok(savedBooking);
     }
 
-    @GetMapping("/showtimes/{id}") 
-    public ResponseEntity<Showtime> getShowtimeById(@PathVariable Long id) {
-        return ResponseEntity.ok(showtimeService.getShowtimeById(id)); 
+    /**
+     * Cancel a booking by ID for the authenticated customer or admin.
+     *
+     * @param bookingId The booking ID to cancel.
+     */
+    @PreAuthorize("hasAnyRole('ROLE_CUSTOMER', 'ROLE_ADMIN')")
+    @DeleteMapping("/bookings/{bookingId}")
+    public ResponseEntity<Void> cancelBooking(@PathVariable @Min(1) Long bookingId) {
+        if (SecurityUtils.hasRole("ROLE_ADMIN")) {
+            bookingService.cancelBooking(bookingId);
+            return ResponseEntity.noContent().build();
+        }
+        Long userId = SecurityUtils.getAuthenticatedUserId();
+        bookingService.cancelBookingForUser(bookingId, userId);
+        return ResponseEntity.noContent().build();
     }
-
-    @GetMapping("/bookings/{id}") 
-    @PreAuthorize("@bookingService.canAccessBooking(#id)") // Check if the customer can access this booking
-    public ResponseEntity<Booking> getBookingById(@PathVariable Long id) { 
-        return ResponseEntity.ok(bookingService.getBookingById(id)); 
-    }
-
-    @DeleteMapping("/bookings/{id}") 
-    @PreAuthorize("@bookingService.canCancelBooking(#id)") // Check if the customer can cancel this booking
-    public ResponseEntity<Void> cancelBooking(@PathVariable Long id) { 
-        bookingService.deleteBooking(id); 
-        return ResponseEntity.noContent().build(); 
-    }
-    
-    public record BookingRequest(Long showtimeId, String seatNumber) {} 
 }

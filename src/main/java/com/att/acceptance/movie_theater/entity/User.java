@@ -9,6 +9,10 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Entity representing a User in the movie theater system.
+ * Each user has roles that determine their access permissions.
+ */
 @Entity
 @Table(name = "users")
 public class User {
@@ -17,26 +21,43 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /**
+     * The full name of the user.
+     */
     @NotBlank(message = "Name is required.")
     @Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
+    @Column(nullable = false)
     private String name;
 
+    /**
+     * The email address of the user. This must be unique and valid.
+     */
     @Email(message = "Invalid email format.")
     @NotBlank(message = "Email is required.")
-    @Column(unique = true) // Ensure email is unique
+    @Column(nullable = false, unique = true)
     private String email;
 
+    /**
+     * The password for the user account.
+     */
     @NotBlank(message = "Password is required.")
+    @Column(nullable = false)
     private String password;
 
+    /**
+     * The roles assigned to the user, determining their access permissions.
+     */
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> roles = new HashSet<>();
-
+    )    
+    
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Enumerated(EnumType.STRING)
+    private Set<RoleEnum> roles = new HashSet<>();
+    
     // Getters and Setters
 
     public Long getId() {
@@ -71,15 +92,22 @@ public class User {
         this.password = password;
     }
 
-    public Set<Role> getRoles() {
-        return roles;
-    }
 
-    public void setRoles(Set<Role> roles) {
-        this.roles = roles;
-    }
+    /**
+	 * @return the roles
+	 */
+	public Set<RoleEnum> getRoles() {
+		return roles;
+	}
 
-    @Override
+	/**
+	 * @param roles the roles to set
+	 */
+	public void setRoles(Set<RoleEnum> roles) {
+		this.roles = roles;
+	}
+
+	@Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -92,13 +120,11 @@ public class User {
         return Objects.hash(id);
     }
 
-    @Override
-    public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
-                '}';
-    }
+	@Override
+	public String toString() {
+		return "User [id=" + id + ", name=" + name + ", email=" + email + ", password=" + password + ", roles=" + roles
+				+ "]";
+	}
+
+
 }

@@ -1,103 +1,126 @@
 package com.att.acceptance.movie_theater.service;
 
-import com.att.acceptance.movie_theater.entity.Movie;
-import com.att.acceptance.movie_theater.entity.Showtime;
-import com.att.acceptance.movie_theater.exception.MovieNotFoundException;
-import com.att.acceptance.movie_theater.exception.ShowtimeNotFoundException;
-import com.att.acceptance.movie_theater.exception.ShowtimeOverlapException;
-import com.att.acceptance.movie_theater.repository.MovieRepository;
-import com.att.acceptance.movie_theater.repository.ShowtimeRepository;
+import java.util.Set;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import com.att.acceptance.movie_theater.entity.Showtime;
+import com.att.acceptance.movie_theater.repository.ShowtimeRepository;
+import com.att.acceptance.movie_theater.repository.TheaterRepository;
 
+/**
+ * Service for managing showtimes.
+ *
+ * This service is responsible for adding, fetching, updating, and deleting
+ * showtimes.
+ * 
+ */
 @Service
 public class ShowtimeService {
 
     private final ShowtimeRepository showtimeRepository;
-    private final MovieRepository movieRepository;
-    private final ShowtimeService service; // Inject itself
+    private final TheaterRepository theaterRepository;
 
-    public ShowtimeService(ShowtimeRepository showtimeRepository, MovieRepository movieRepository, ShowtimeService showtimeService) {
+    public ShowtimeService(ShowtimeRepository showtimeRepository, TheaterRepository theaterRepository) {
         this.showtimeRepository = showtimeRepository;
-        this.movieRepository = movieRepository;
-        this.service = showtimeService;
+        this.theaterRepository = theaterRepository;
     }
 
-    public Page<Showtime> getAllShowtimes(Pageable pageable) {
-        return showtimeRepository.findAll(pageable); 
-    }
-
-    @Transactional(readOnly = true)
-    public Showtime getShowtimeById(Long id) {
-        Optional<Showtime> showtime = showtimeRepository.findById(id);
-        return showtime.orElseThrow(() -> new ShowtimeNotFoundException("Showtime not found with id: " + id));
-    }
-
-    @PreAuthorize("hasRole('ROLE_ADMIN')") 
-    public Showtime createShowtime(Showtime showtime) {
-        Movie movie = movieRepository.findById(showtime.getMovie().getId())
-                .orElseThrow(() -> new MovieNotFoundException("Movie not found.")); 
-
-        showtime.setMovie(movie); 
-        
-        // Check for overlapping showtimes for the same movie in the same theater
-        List<Showtime> existingShowtimes = showtimeRepository.findByMovieAndTheaterAndStartTimeBeforeAndEndTimeAfter(
-                showtime.getMovie(), showtime.getTheater(), showtime.getEndTime(), showtime.getStartTime());
-
-        if (!existingShowtimes.isEmpty()) {
-            throw new ShowtimeOverlapException("Overlapping showtime found for this movie and theater.");
-        }
-
-        // Check if endTime is after startTime
-        if (showtime.getEndTime().isBefore(showtime.getStartTime())) {
-            throw new IllegalArgumentException("End time must be after start time.");
-        }
-
-        return showtimeRepository.save(showtime);
-    }
-
-    @PreAuthorize("hasRole('ROLE_ADMIN') and @showtimeService.canUpdateShowtime(#id)") 
-    public Showtime updateShowtime(Long id, Showtime showtimeDetails) {
-        Showtime showtime = service.getShowtimeById(id); // Call getShowtimeById via injected instance
-
-        // Check for overlapping showtimes after update
-        List<Showtime> existingShowtimes = showtimeRepository.findOverlappingShowtimes(
-                showtimeDetails.getTheater(), showtimeDetails.getEndTime(), showtimeDetails.getStartTime()
-        );
-
-        if (!existingShowtimes.isEmpty() && !existingShowtimes.contains(showtime)) {
-            throw new ShowtimeOverlapException("Overlapping showtime found for this theater.");
-        }
-
-        showtime.setMovie(showtimeDetails.getMovie());
-        showtime.setTheater(showtimeDetails.getTheater());
-        showtime.setStartTime(showtimeDetails.getStartTime());
-        showtime.setEndTime(showtimeDetails.getEndTime());
-
-        return showtimeRepository.save(showtime);
-    }
-
-    @PreAuthorize("hasRole('ROLE_ADMIN') and @showtimeService.canDeleteShowtime(#id)") 
-    public void deleteShowtime(Long id) {
-        service.getShowtimeById(id); // Call getShowtimeById to ensure showtime exists before deletion
-        showtimeRepository.deleteById(id);
-    }
-    
     /**
-     * Fetch all showtimes for a specific movie with pagination.
-     * 
-     * @param movieId Movie ID
-     * @param pageable Pagination details
-     * @return Paginated list of showtimes for the movie
+     * Add a new showtime.
+     *
+     * @param showtime The showtime to add.
+     * @return The added showtime.
      */
-    public Page<Showtime> getShowtimesByMovie(Long movieId, Pageable pageable) {
-        return showtimeRepository.findByMovieId(movieId, pageable);
+    @Transactional
+    public Showtime addShowtime(Showtime showtime) {
+        validateShowtime(showtime);
+
+        Long theaterId = showtime.getTheater().getId();
+        theaterRepository.findById(theaterId).orElseThrow(() ->
+                new IllegalArgumentException("Theater with ID " + theaterId + " does not exist."));
+
+        return showtimeRepository.save(showtime);
+    }
+
+    /**
+     * Validate a new showtime.
+     *
+     * @param showtime The showtime to validate.
+     */
+    private void validateShowtime(Showtime showtime) {
+        if (showtimeRepository.existsOverlappingShowtime(
+                showtime.getTheater().getId(),
+                showtime.getStartTime(),
+                showtime.getEndTime())) {
+            throw new IllegalArgumentException("Showtime overlaps with an existing showtime in the same theater.");
+        }
+
+        if (showtimeRepository.existsOverlappingShowtimeForMovie(
+                showtime.getTheater().getId(),
+                showtime.getMovie().getId(),
+                showtime.getStartTime(),
+                showtime.getEndTime())) {
+            throw new IllegalArgumentException("Showtime overlaps with an existing showtime for the same movie in the theater.");
+        }
+    }
+
+    /**
+     * Fetch all showtimes for a specific movie.
+     *
+     * @param movieId The movie ID.
+     * @return A set of showtimes for the movie.
+     */
+    @Transactional(readOnly = true)
+    public Set<Showtime> getShowtimesByMovie(Long movieId) {
+        return Set.copyOf(showtimeRepository.findByMovieId(movieId));
+    }
+
+    /**
+     * Fetch all showtimes for a specific theater.
+     *
+     * @param theaterId The theater ID.
+     * @return A set of showtimes for the theater.
+     */
+    @Transactional(readOnly = true)
+    public Set<Showtime> getShowtimesByTheater(Long theaterId) {
+        theaterRepository.findById(theaterId).orElseThrow(() ->
+                new IllegalArgumentException("Theater with ID " + theaterId + " does not exist."));
+        return Set.copyOf(showtimeRepository.findByTheaterId(theaterId));
+    }
+
+    /**
+     * Delete a showtime by its ID.
+     *
+     * @param showtimeId The ID of the showtime to delete.
+     */
+    @Transactional
+    public void deleteShowtime(Long showtimeId) {
+        showtimeRepository.findById(showtimeId).orElseThrow(() ->
+                new IllegalArgumentException("Showtime with ID " + showtimeId + " does not exist."));
+        showtimeRepository.deleteById(showtimeId);
+    }
+
+    /**
+     * Update an existing showtime.
+     *
+     * @param showtimeId The ID of the showtime to update.
+     * @param updatedShowtime The updated showtime details.
+     * @return The updated showtime.
+     */
+    @Transactional
+    public Showtime updateShowtime(Long showtimeId, Showtime updatedShowtime) {
+        Showtime existingShowtime = showtimeRepository.findById(showtimeId).orElseThrow(() ->
+                new IllegalArgumentException("Showtime with ID " + showtimeId + " does not exist."));
+
+        validateShowtime(updatedShowtime);
+
+        existingShowtime.setStartTime(updatedShowtime.getStartTime());
+        existingShowtime.setEndTime(updatedShowtime.getEndTime());
+        existingShowtime.setMovie(updatedShowtime.getMovie());
+        existingShowtime.setTheater(updatedShowtime.getTheater());
+
+        return showtimeRepository.save(existingShowtime);
     }
 }

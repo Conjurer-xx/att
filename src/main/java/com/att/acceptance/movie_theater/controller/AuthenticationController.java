@@ -1,84 +1,95 @@
 package com.att.acceptance.movie_theater.controller;
 
-import java.util.Date;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
+import com.att.acceptance.movie_theater.entity.User;
+import com.att.acceptance.movie_theater.security.JwtTokenProvider;
+import com.att.acceptance.movie_theater.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.att.acceptance.movie_theater.entity.User;
-import com.att.acceptance.movie_theater.service.UserService;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
+@Validated
 public class AuthenticationController {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final UserService userService;
 
-    @Autowired
-    private UserService userService;
+    public AuthenticationController(AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider, UserService userService) {
+        this.authenticationManager = authenticationManager;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.userService = userService;
+    }
 
-    @Value("${jwt.secret}")
-    private String secret;
+    /**
+     * Authenticate a user and generate a JWT token.
+     *
+     * @param loginRequest The login request containing email and password.
+     * @return A response containing the JWT token.
+     */
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, String>> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginRequest.getEmail(),
+                        loginRequest.getPassword()
+                )
+        );
 
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        String token = jwtTokenProvider.generateToken(authentication);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("token", token);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Register a new user (Customer by default).
+     *
+     * @param user The user to register.
+     * @return The registered user.
+     */
     @PostMapping("/register")
     public ResponseEntity<User> registerUser(@Valid @RequestBody User user) {
-        User newUser = userService.createUser(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
+        User registeredUser = userService.registerUser(user, com.att.acceptance.movie_theater.entity.RoleEnum.ROLE_CUSTOMER);
+        return ResponseEntity.ok(registeredUser);
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthenticationRequest authenticationRequest) throws JOSEException {
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            authenticationRequest.email(),
-                            authenticationRequest.password()
-                    )
-            );
+    /**
+     * DTO for login request.
+     */
+    public static class LoginRequest {
 
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+        @jakarta.validation.constraints.Email
+        private String email;
 
-            JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                    .subject(authentication.getName())
-                    .issuer("your_application") // Set issuer
-                    .claim("authorities", authentication.getAuthorities())
-                    .issueTime(new Date())
-                    .expirationTime(new Date(System.currentTimeMillis() + 3600000)) // 1 hour expiration
-                    .build();
+        @jakarta.validation.constraints.NotBlank
+        private String password;
 
-            SignedJWT signedJWT = new SignedJWT(new JWSHeader(JWSAlgorithm.HS512), claims);
-            signedJWT.sign(new MACSigner(secret.getBytes()));
+        public String getEmail() {
+            return email;
+        }
 
-            String jwt = signedJWT.serialize();
+        public void setEmail(String email) {
+            this.email = email;
+        }
 
-            return ResponseEntity.ok(new AuthenticationResponse(jwt));
-        } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Incorrect username or password");
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
         }
     }
-    
-    public record AuthenticationRequest(String email, String password) {}
-
-    public record AuthenticationResponse(String jwt) {}
-
 }
-

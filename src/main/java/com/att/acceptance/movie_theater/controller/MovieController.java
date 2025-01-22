@@ -2,23 +2,18 @@ package com.att.acceptance.movie_theater.controller;
 
 import com.att.acceptance.movie_theater.entity.Movie;
 import com.att.acceptance.movie_theater.service.MovieService;
-
-import jakarta.validation.Valid;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * Controller for managing movies.
- * Customers can view movies, while admins have full access.
- */
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+
 @RestController
-@RequestMapping("/api/movies")
+@RequestMapping("/movies")
 @Validated
 public class MovieController {
 
@@ -29,57 +24,66 @@ public class MovieController {
     }
 
     /**
-     * Fetch all movies with pagination.
-     * Accessible to all users.
-     * @param pageable Pagination details
-     * @return Paginated list of movies
+     * Add a new movie. (Admin only)
+     *
+     * @param movie The movie to add.
+     * @return The added movie.
+     */
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PostMapping
+    public ResponseEntity<Movie> addMovie(@Valid @RequestBody Movie movie) {
+        Movie savedMovie = movieService.addMovie(movie);
+        return ResponseEntity.ok(savedMovie);
+    }
+
+    /**
+     * Get all movies with pagination.
+     * Accessible by both customers and admins.
+     *
+     * @param pageable Pagination details.
+     * @return A page of movies.
      */
     @GetMapping
     public ResponseEntity<Page<Movie>> getAllMovies(Pageable pageable) {
-        return ResponseEntity.ok(movieService.getAllMovies(pageable));
+        Page<Movie> movies = movieService.getAllMovies(pageable);
+        return ResponseEntity.ok(movies);
     }
 
     /**
-     * Fetch a movie by its ID.
-     * Accessible to all users.
-     * @param id Movie ID
-     * @return Movie details
+     * Get a movie by ID.
+     * Accessible by both customers and admins.
+     *
+     * @param id The movie ID.
+     * @return The movie.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Movie> getMovieById(@PathVariable Long id) {
-        return ResponseEntity.ok(movieService.getMovieById(id));
+    public ResponseEntity<Movie> getMovieById(@PathVariable @Min(1) Long id) {
+        Movie movie = movieService.getMovieById(id);
+        return ResponseEntity.ok(movie);
     }
 
     /**
-     * Add a new movie (Admin only).
-     * @param movie Movie details
-     * @return Created movie
+     * Update an existing movie. (Admin only)
+     *
+     * @param id The movie ID.
+     * @param updatedMovie The updated movie details.
+     * @return The updated movie.
      */
-    @PreAuthorize("hasRole('ADMIN_ROLE')")
-    @PostMapping
-    public ResponseEntity<Movie> createMovie(@Valid @RequestBody Movie movie) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(movieService.createMovie(movie));
-    }
-
-    /**
-     * Update an existing movie (Admin only).
-     * @param id Movie ID
-     * @param movieDetails Updated details
-     * @return Updated movie
-     */
-    @PreAuthorize("hasRole('ADMIN_ROLE')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<Movie> updateMovie(@PathVariable Long id, @Valid @RequestBody Movie movieDetails) {
-        return ResponseEntity.ok(movieService.updateMovie(id, movieDetails));
+    public ResponseEntity<Movie> updateMovie(@PathVariable @Min(1) Long id, @Valid @RequestBody Movie updatedMovie) {
+        Movie movie = movieService.updateMovie(id, updatedMovie);
+        return ResponseEntity.ok(movie);
     }
 
     /**
-     * Delete a movie (Admin only).
-     * @param id Movie ID
+     * Delete a movie by ID. (Admin only)
+     *
+     * @param id The movie ID.
      */
-    @PreAuthorize("hasRole('ADMIN_ROLE')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteMovie(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteMovie(@PathVariable @Min(1) Long id) {
         movieService.deleteMovie(id);
         return ResponseEntity.noContent().build();
     }

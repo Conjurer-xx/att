@@ -33,7 +33,7 @@ public class BookingSecurity {
             return false; // Booking does not exist
         }
 
-        // Check if the user is the booking owner or has the ADMIN_ROLE
+        // Check if the user is the booking owner or has the ROLE_ADMIN
         return booking.getUser().getEmail().equals(username)
                 || SecurityContextHolder.getContext().getAuthentication().getAuthorities()
                 .stream()

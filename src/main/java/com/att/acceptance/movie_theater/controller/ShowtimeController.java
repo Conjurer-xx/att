@@ -1,98 +1,86 @@
 package com.att.acceptance.movie_theater.controller;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
+import com.att.acceptance.movie_theater.entity.Showtime;
+import com.att.acceptance.movie_theater.service.ShowtimeService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.att.acceptance.movie_theater.entity.Showtime;
-import com.att.acceptance.movie_theater.service.ShowtimeService;
+import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import java.util.Set;
 
-/**
- * Controller for managing showtimes.
- * Customers can view showtimes, while admins have full control.
- */
 @RestController
-@RequestMapping("/api/showtimes")
+@RequestMapping("/showtimes")
 @Validated
 public class ShowtimeController {
 
     private final ShowtimeService showtimeService;
-
 
     public ShowtimeController(ShowtimeService showtimeService) {
         this.showtimeService = showtimeService;
     }
 
     /**
-     * Fetch all showtimes with pagination.
-     * Accessible to all users.
-     * @param pageable Pagination details
-     * @return Paginated list of showtimes
+     * Add a new showtime. (Admin only)
+     *
+     * @param showtime The showtime to add.
+     * @return The added showtime.
      */
-    @GetMapping
-    public ResponseEntity<Page<Showtime>> getAllShowtimes(Pageable pageable) {
-        return ResponseEntity.ok(showtimeService.getAllShowtimes(pageable));
-    }
-
-    /**
-     * Fetch all showtimes for a specific movie with pagination.
-     * 
-     * @param movieId Movie ID
-     * @param pageable Pagination details
-     * @return Paginated list of showtimes
-     */
-    @PreAuthorize("hasRole('CUSTOMER_ROLE') or hasRole('ADMIN_ROLE')")
-    @GetMapping("/movie/{movieId}")
-    public ResponseEntity<Page<Showtime>> getShowtimesByMovie(
-            @PathVariable Long movieId, Pageable pageable) {
-        return ResponseEntity.ok(showtimeService.getShowtimesByMovie(movieId, pageable));
-    }
-    
-    /**
-     * Add a new showtime (Admin only).
-     * @param showtime Showtime details
-     * @return Created showtime
-     */
-    @PreAuthorize("hasRole('ADMIN_ROLE')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping
-    public ResponseEntity<Showtime> createShowtime(@Valid @RequestBody Showtime showtime) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(showtimeService.createShowtime(showtime));
+    public ResponseEntity<Showtime> addShowtime(@Valid @RequestBody Showtime showtime) {
+        Showtime savedShowtime = showtimeService.addShowtime(showtime);
+        return ResponseEntity.ok(savedShowtime);
     }
 
     /**
-     * Update an existing showtime (Admin only).
-     * @param id Showtime ID
-     * @param showtimeDetails Updated showtime details
-     * @return Updated showtime
+     * Get all showtimes for a specific movie. (Accessible by all users)
+     *
+     * @param movieId The movie ID.
+     * @return A set of showtimes for the movie.
+     */
+    @GetMapping("/movie/{movieId}")
+    public ResponseEntity<Set<Showtime>> getShowtimesByMovie(@PathVariable @Min(1) Long movieId) {
+        Set<Showtime> showtimes = showtimeService.getShowtimesByMovie(movieId);
+        return ResponseEntity.ok(showtimes);
+    }
+
+    /**
+     * Get all showtimes for a specific theater. (Accessible by all users)
+     *
+     * @param theaterId The theater ID.
+     * @return A set of showtimes for the theater.
+     */
+    @GetMapping("/theater/{theaterId}")
+    public ResponseEntity<Set<Showtime>> getShowtimesByTheater(@PathVariable @Min(1) Long theaterId) {
+        Set<Showtime> showtimes = showtimeService.getShowtimesByTheater(theaterId);
+        return ResponseEntity.ok(showtimes);
+    }
+
+    /**
+     * Update an existing showtime. (Admin only)
+     *
+     * @param id The showtime ID.
+     * @param updatedShowtime The updated showtime details.
+     * @return The updated showtime.
      */
     @PreAuthorize("hasRole('ADMIN_ROLE')")
     @PutMapping("/{id}")
-    public ResponseEntity<Showtime> updateShowtime(
-            @PathVariable Long id,
-            @Valid @RequestBody Showtime showtimeDetails) {
-        return ResponseEntity.ok(showtimeService.updateShowtime(id, showtimeDetails));
+    public ResponseEntity<Showtime> updateShowtime(@PathVariable @Min(1) Long id, @Valid @RequestBody Showtime updatedShowtime) {
+        Showtime showtime = showtimeService.updateShowtime(id, updatedShowtime);
+        return ResponseEntity.ok(showtime);
     }
 
     /**
-     * Delete a showtime (Admin only).
-     * @param id Showtime ID
+     * Delete a showtime by ID. (Admin only)
+     *
+     * @param id The showtime ID.
      */
     @PreAuthorize("hasRole('ADMIN_ROLE')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteShowtime(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteShowtime(@PathVariable @Min(1) Long id) {
         showtimeService.deleteShowtime(id);
         return ResponseEntity.noContent().build();
     }

@@ -2,10 +2,13 @@ package com.att.acceptance.movie_theater.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-
-import java.math.BigDecimal;
+import jakarta.validation.constraints.Size;
 import java.util.Objects;
 
+/**
+ * Entity representing a Seat in the movie theater system.
+ * Each seat has a unique seat number and is linked to its availability.
+ */
 @Entity
 @Table(name = "seats")
 public class Seat {
@@ -13,15 +16,27 @@ public class Seat {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    
+    @ManyToOne
+    @JoinColumn(name = "theater_id", nullable = false)
+    private Theater theater;
 
+
+    /**
+     * Unique identifier for the seat in the theater.
+     * Example: A1, B12.
+     */
     @NotBlank(message = "Seat number is required.")
+    @Size(max = 10, message = "Seat number must not exceed 10 characters.")
+    @Column(nullable = false, unique = true)
     private String seatNumber;
 
-    @OneToOne(mappedBy = "seat", cascade = CascadeType.ALL)
+    /**
+     * Represents the availability status of the seat.
+     * This is a one-to-one relationship with the SeatAvailability entity.
+     */
+    @OneToOne(mappedBy = "seat", cascade = CascadeType.ALL, orphanRemoval = true)
     private SeatAvailability seatAvailability; 
-
-    @Column(nullable = false)
-    private BigDecimal price;
 
     // Getters and Setters
 
@@ -42,31 +57,31 @@ public class Seat {
     }
 
     /**
-	 * @return the price
+     * @return the seatAvailability
+     */
+    public SeatAvailability getSeatAvailability() {
+        return seatAvailability;
+    }
+
+    /**
+     * @param seatAvailability the seatAvailability to set
+     */
+    public void setSeatAvailability(SeatAvailability seatAvailability) {
+        this.seatAvailability = seatAvailability;
+    }
+
+    /**
+	 * @return the theater
 	 */
-	public BigDecimal getPrice() {
-		return price;
+	public Theater getTheater() {
+		return theater;
 	}
 
 	/**
-	 * @param price the price to set
+	 * @param theater the theater to set
 	 */
-	public void setPrice(BigDecimal price) {
-		this.price = price;
-	}
-
-	/**
-	 * @return the seatAvailability
-	 */
-	public SeatAvailability getSeatAvailability() {
-		return seatAvailability;
-	}
-
-	/**
-	 * @param seatAvailability the seatAvailability to set
-	 */
-	public void setSeatAvailability(SeatAvailability seatAvailability) {
-		this.seatAvailability = seatAvailability;
+	public void setTheater(Theater theater) {
+		this.theater = theater;
 	}
 
 	@Override
@@ -84,10 +99,8 @@ public class Seat {
 
 	@Override
 	public String toString() {
-		return "Seat [id=" + id + ", seatNumber=" + seatNumber + ", seatAvailability=" + seatAvailability + ", price="
-				+ price + "]";
+		return "Seat [id=" + id + ", theater=" + theater + ", seatNumber=" + seatNumber + ", seatAvailability="
+				+ seatAvailability + "]";
 	}
-
-
 
 }

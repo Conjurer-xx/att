@@ -38,10 +38,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/movies/**").permitAll() // Read-only for customers
-                        .requestMatchers("/api/movies").hasRole("ADMIN_ROLE") // Admin-only management
+                        .requestMatchers("/api/movies").hasRole("ROLE_ADMIN") // Admin-only management
                         .requestMatchers("/api/showtimes/**").permitAll() // Read-only for customers
-                        .requestMatchers("/api/bookings/**").hasRole("CUSTOMER_ROLE")
-                        .requestMatchers("/api/users/**").hasRole("ADMIN_ROLE")
+                        .requestMatchers("/api/bookings/**").hasRole("ROLE_CUSTOMER")
+                        .requestMatchers("/api/users/**").hasRole("ROLE_ADMIN")
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)

@@ -1,100 +1,105 @@
 package com.att.acceptance.movie_theater.controller;
 
-
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.att.acceptance.movie_theater.entity.Movie;
+import com.att.acceptance.movie_theater.entity.Theater;
 import com.att.acceptance.movie_theater.entity.Showtime;
 import com.att.acceptance.movie_theater.service.MovieService;
+import com.att.acceptance.movie_theater.service.TheaterService;
 import com.att.acceptance.movie_theater.service.ShowtimeService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 
+
+/**
+ * Controller for admin-level operations.
+ * These operations require admin access and provide additional functionality.
+ * Admins can add new movies, theaters, and showtimes.
+ *
+ **/
 @RestController
-@RequestMapping("/api/admin")
-@PreAuthorize("hasRole('ROLE_ADMIN')") // Ensure only admins can access these endpoints
+@RequestMapping("/admin")
+@Validated
 public class AdminController {
 
     private final MovieService movieService;
-    private final ShowtimeService showtimeService; 
-    
+    private final TheaterService theaterService;
+    private final ShowtimeService showtimeService;
 
-
-
-	/**
-	 * @param movieService
-	 * @param showtimeService
-	 */
-	public AdminController(MovieService movieService, ShowtimeService showtimeService) {
-		super();
-		this.movieService = movieService;
-		this.showtimeService = showtimeService;
-	}
-
-	@GetMapping("/movies")
-    public ResponseEntity<Page<Movie>> getAllMovies(Pageable pageable) {
-        return ResponseEntity.ok(movieService.getAllMovies(pageable));
+    public AdminController(MovieService movieService, TheaterService theaterService, ShowtimeService showtimeService) {
+        this.movieService = movieService;
+        this.theaterService = theaterService;
+        this.showtimeService = showtimeService;
     }
 
-    @GetMapping("/movies/{id}")
-    public ResponseEntity<Movie> getMovieById(@PathVariable Long id) {
-        return ResponseEntity.ok(movieService.getMovieById(id));
-    }
-
+    /**
+     * Add a new movie. (Admin only)
+     *
+     * @param movie The movie to add.
+     * @return The added movie.
+     */
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping("/movies")
-    public ResponseEntity<Movie> createMovie(@RequestBody Movie movie) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(movieService.createMovie(movie));
+    public ResponseEntity<Movie> addMovie(@Valid @RequestBody Movie movie) {
+        Movie savedMovie = movieService.addMovie(movie);
+        return ResponseEntity.ok(savedMovie);
     }
 
-    @PutMapping("/movies/{id}")
-    public ResponseEntity<Movie> updateMovie(@PathVariable Long id, @RequestBody Movie movieDetails) {
-        return ResponseEntity.ok(movieService.updateMovie(id, movieDetails));
+    /**
+     * Add a new theater. (Admin only)
+     *
+     * @param theater The theater to add.
+     * @return The added theater.
+     */
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PostMapping("/theaters")
+    public ResponseEntity<Theater> addTheater(@Valid @RequestBody Theater theater) {
+        Theater savedTheater = theaterService.addTheater(theater);
+        return ResponseEntity.ok(savedTheater);
     }
 
-    @DeleteMapping("/movies/{id}")
-    public ResponseEntity<Void> deleteMovie(@PathVariable Long id) {
-        movieService.deleteMovie(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/showtimes")
-    public ResponseEntity<Page<Showtime>> getAllShowtimes(Pageable pageable) {
-        return ResponseEntity.ok(showtimeService.getAllShowtimes(pageable));
-    }
-
-    @GetMapping("/showtimes/{id}")
-    public ResponseEntity<Showtime> getShowtimeById(@PathVariable Long id) {
-        return ResponseEntity.ok(showtimeService.getShowtimeById(id));
-    }
-
+    /**
+     * Add a new showtime. (Admin only)
+     *
+     * @param showtime The showtime to add.
+     * @return The added showtime.
+     */
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping("/showtimes")
-    public ResponseEntity<Showtime> createShowtime(@Valid @RequestBody Showtime showtime) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(showtimeService.createShowtime(showtime));
+    public ResponseEntity<Showtime> addShowtime(@Valid @RequestBody Showtime showtime) {
+        Showtime savedShowtime = showtimeService.addShowtime(showtime);
+        return ResponseEntity.ok(savedShowtime);
     }
 
-    @PutMapping("/showtimes/{id}")
-    @PreAuthorize("@showtimeService.canUpdateShowtime(#id)") // Custom authorization expression
-    public ResponseEntity<Showtime> updateShowtime(@PathVariable Long id, @Valid @RequestBody Showtime showtimeDetails) {
-        return ResponseEntity.ok(showtimeService.updateShowtime(id, showtimeDetails));
+    /**
+     * Get all movies. (Accessible by everyone, paginated)
+     *
+     * @param pageable Pagination details.
+     * @return A page of all movies.
+     */
+    @GetMapping("/movies")
+    public ResponseEntity<Page<Movie>> getAllMovies(Pageable pageable) {
+        Page<Movie> movies = movieService.getAllMovies(pageable);
+        return ResponseEntity.ok(movies);
     }
 
-    @DeleteMapping("/showtimes/{id}")
-    @PreAuthorize("@showtimeService.canDeleteShowtime(#id)") // Custom authorization expression
-    public ResponseEntity<Void> deleteShowtime(@PathVariable Long id) {
-        showtimeService.deleteShowtime(id);
+    /**
+     * Delete a movie by ID. (Admin only)
+     *
+     * @param movieId The ID of the movie to delete.
+     */
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @DeleteMapping("/movies/{movieId}")
+    public ResponseEntity<Void> deleteMovie(@PathVariable @Min(1) Long movieId) {
+        movieService.deleteMovie(movieId);
         return ResponseEntity.noContent().build();
     }
+
+    // Additional admin-level operations can be added here for further flexibility.
 }

@@ -1,43 +1,54 @@
 package com.att.acceptance.movie_theater.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.FutureOrPresent;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-
+import jakarta.validation.constraints.AssertTrue;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.List;
 
+/**
+ * Entity representing a Showtime in the movie theater system.
+ * Maps to the database table for showtimes and includes relationships
+ * with Movie, Theater, and associated Bookings.
+ */
 @Entity
-@Table(name = "showtimes")
+@Table(
+    name = "showtimes",
+    uniqueConstraints = @UniqueConstraint(columnNames = {"theater_id", "start_time"})
+)
 public class Showtime {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull(message = "Movie is required.")
     @ManyToOne
     @JoinColumn(name = "movie_id", nullable = false)
+    @NotNull(message = "Movie is required")
     private Movie movie;
 
-    @NotBlank(message = "Theater name is required.")
-    private String theater;
+    @ManyToOne
+    @JoinColumn(name = "theater_id", nullable = false)
+    @NotNull(message = "Theater is required")
+    private Theater theater;
 
-    @NotNull(message = "Start time is required.")
-    @FutureOrPresent(message = "Start time cannot be in the past.")
+    @Column(name = "start_time", nullable = false)
+    @NotNull(message = "Start time is required")
     private LocalDateTime startTime;
 
-    @NotNull(message = "End time is required.")
-    @FutureOrPresent(message = "End time cannot be in the past.") 
+    @Column(name = "end_time", nullable = false)
+    @NotNull(message = "End time is required")
     private LocalDateTime endTime;
 
-    @OneToMany(mappedBy = "showtime", cascade = CascadeType.ALL)
-    private Set<Booking> bookings = new HashSet<>(); 
+    @OneToMany(mappedBy = "showtime", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Booking> bookings;
 
-    // Getters and Setters
+    @AssertTrue(message = "Start time must be before end time")
+    public boolean isStartTimeBeforeEndTime() {
+        return startTime != null && endTime != null && startTime.isBefore(endTime);
+    }
+
+    // Getters and setters
 
     public Long getId() {
         return id;
@@ -55,11 +66,11 @@ public class Showtime {
         this.movie = movie;
     }
 
-    public String getTheater() {
+    public Theater getTheater() {
         return theater;
     }
 
-    public void setTheater(String theater) {
+    public void setTheater(Theater theater) {
         this.theater = theater;
     }
 
@@ -79,35 +90,11 @@ public class Showtime {
         this.endTime = endTime;
     }
 
-    public Set<Booking> getBookings() {
+    public List<Booking> getBookings() {
         return bookings;
     }
 
-    public void setBookings(Set<Booking> bookings) {
+    public void setBookings(List<Booking> bookings) {
         this.bookings = bookings;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Showtime showtime = (Showtime) o;
-        return Objects.equals(id, showtime.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id);
-    }
-
-    @Override
-    public String toString() {
-        return "Showtime{" +
-                "id=" + id +
-                ", movie=" + movie +
-                ", theater='" + theater + '\'' +
-                ", startTime=" + startTime +
-                ", endTime=" + endTime +
-                '}';
     }
 }
