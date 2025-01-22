@@ -1,5 +1,7 @@
 package com.att.acceptance.movie_theater.service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Service;
@@ -123,4 +125,40 @@ public class ShowtimeService {
 
         return showtimeRepository.save(existingShowtime);
     }
+    
+
+    /**
+     * remove showtime by id
+     * 
+     * @param id The ID of the showtime to remove.
+     */
+    @Transactional
+    public void removeShowtime(Long id) {
+        Showtime showtime = showtimeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Showtime not found with ID: " + id));
+        showtimeRepository.deleteById(showtime.getId());
+    }
+    
+    /**
+     * find showtime by id
+     * 
+     * @param id The ID of the showtime to find.
+     * @return The showtime
+     */
+    @Transactional(readOnly = true)
+    public Showtime findShowtimeById(Long id) {
+        return showtimeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Showtime not found with ID: " + id));
+    }
+    
+	/**
+	 * find all showtimes
+	 * 
+	 * @return A list of showtimes.
+	 */
+    public List<Showtime> findAllShowtimes() {
+        return new ArrayList<>(showtimeRepository.findAll());
+    }
+
+
 }

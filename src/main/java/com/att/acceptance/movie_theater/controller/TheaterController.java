@@ -3,6 +3,8 @@ package com.att.acceptance.movie_theater.controller;
 import com.att.acceptance.movie_theater.entity.Theater;
 import com.att.acceptance.movie_theater.entity.Seat;
 import com.att.acceptance.movie_theater.service.TheaterService;
+
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -13,7 +15,7 @@ import jakarta.validation.constraints.Min;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/theaters")
+@RequestMapping(value = "/api/theaters", produces = MediaType.APPLICATION_JSON_VALUE)
 @Validated
 public class TheaterController {
 
@@ -30,7 +32,7 @@ public class TheaterController {
      * @return The added theater.
      */
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @PostMapping
+    @PostMapping(path = "/add", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Theater> addTheater(@Valid @RequestBody Theater theater) {
         Theater savedTheater = theaterService.addTheater(theater);
         return ResponseEntity.ok(savedTheater);
@@ -41,7 +43,7 @@ public class TheaterController {
      *
      * @return A set of all theaters.
      */
-    @GetMapping
+    @GetMapping(path = "/get-all-theaters")
     public ResponseEntity<Set<Theater>> getAllTheaters() {
         Set<Theater> theaters = theaterService.getAllTheaters();
         return ResponseEntity.ok(theaters);
@@ -53,7 +55,7 @@ public class TheaterController {
      * @param id The theater ID.
      * @return The theater.
      */
-    @GetMapping("/{id}")
+    @GetMapping(path = "/get-single-theater/{id}")
     public ResponseEntity<Theater> getTheaterById(@PathVariable @Min(1) Long id) {
         Theater theater = theaterService.getTheaterById(id);
         return ResponseEntity.ok(theater);
@@ -67,7 +69,7 @@ public class TheaterController {
      * @return The updated theater.
      */
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @PutMapping("/{id}")
+    @PutMapping(path = "/update/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Theater> updateTheater(@PathVariable @Min(1) Long id, @Valid @RequestBody Theater updatedTheater) {
         Theater theater = theaterService.updateTheater(id, updatedTheater);
         return ResponseEntity.ok(theater);
@@ -79,7 +81,7 @@ public class TheaterController {
      * @param id The theater ID.
      */
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @DeleteMapping("/{id}")
+    @DeleteMapping(path = "/delete/{id}")
     public ResponseEntity<Void> deleteTheater(@PathVariable @Min(1) Long id) {
         theaterService.deleteTheater(id);
         return ResponseEntity.noContent().build();

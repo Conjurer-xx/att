@@ -74,4 +74,17 @@ public class SeatService {
                 new IllegalArgumentException("Seat with ID " + seatId + " does not exist."));
         seatRepository.deleteById(seatId);
     }
+    
+	/**
+	 * Fetch a seat by its ID.
+	 *
+	 * @param id The ID of the seat.
+	 * @return The seat.
+	 */
+    @Transactional(readOnly = true)
+    public Seat getSeatById(Long id) {
+        return seatRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Seat not found with ID: " + id));
+    }
+
 }

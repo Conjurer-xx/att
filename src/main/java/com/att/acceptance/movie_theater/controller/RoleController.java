@@ -1,6 +1,8 @@
 package com.att.acceptance.movie_theater.controller;
 
 import com.att.acceptance.movie_theater.entity.RoleEnum;
+
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -11,7 +13,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/roles")
+@RequestMapping(value = "/api/roles", produces = MediaType.APPLICATION_JSON_VALUE)
 @Validated
 public class RoleController {
 
@@ -21,7 +23,7 @@ public class RoleController {
      * @return A set of all roles.
      */
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @GetMapping
+    @GetMapping(path = "/get-all-roles")
     public ResponseEntity<Set<RoleEnum>> getAllRoles() {
         Set<RoleEnum> roles = Arrays.stream(RoleEnum.values()).collect(Collectors.toSet());
         return ResponseEntity.ok(roles);

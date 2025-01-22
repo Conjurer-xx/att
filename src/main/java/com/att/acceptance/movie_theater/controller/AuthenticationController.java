@@ -3,6 +3,8 @@ package com.att.acceptance.movie_theater.controller;
 import com.att.acceptance.movie_theater.entity.User;
 import com.att.acceptance.movie_theater.security.JwtTokenProvider;
 import com.att.acceptance.movie_theater.service.UserService;
+
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,7 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping(value = "/api/auth", produces = MediaType.APPLICATION_JSON_VALUE)
 @Validated
 public class AuthenticationController {
 

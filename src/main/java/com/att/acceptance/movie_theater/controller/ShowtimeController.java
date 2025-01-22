@@ -2,6 +2,8 @@ package com.att.acceptance.movie_theater.controller;
 
 import com.att.acceptance.movie_theater.entity.Showtime;
 import com.att.acceptance.movie_theater.service.ShowtimeService;
+
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -12,7 +14,7 @@ import jakarta.validation.constraints.Min;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/showtimes")
+@RequestMapping(value = "/api/showtimes", produces = MediaType.APPLICATION_JSON_VALUE)
 @Validated
 public class ShowtimeController {
 
@@ -29,7 +31,7 @@ public class ShowtimeController {
      * @return The added showtime.
      */
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @PostMapping
+    @PostMapping(path = "/add", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Showtime> addShowtime(@Valid @RequestBody Showtime showtime) {
         Showtime savedShowtime = showtimeService.addShowtime(showtime);
         return ResponseEntity.ok(savedShowtime);
@@ -67,7 +69,7 @@ public class ShowtimeController {
      * @return The updated showtime.
      */
     @PreAuthorize("hasRole('ADMIN_ROLE')")
-    @PutMapping("/{id}")
+    @PutMapping(path = "/update/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Showtime> updateShowtime(@PathVariable @Min(1) Long id, @Valid @RequestBody Showtime updatedShowtime) {
         Showtime showtime = showtimeService.updateShowtime(id, updatedShowtime);
         return ResponseEntity.ok(showtime);
@@ -79,7 +81,7 @@ public class ShowtimeController {
      * @param id The showtime ID.
      */
     @PreAuthorize("hasRole('ADMIN_ROLE')")
-    @DeleteMapping("/{id}")
+    @DeleteMapping(path = "/delete/{id}")
     public ResponseEntity<Void> deleteShowtime(@PathVariable @Min(1) Long id) {
         showtimeService.deleteShowtime(id);
         return ResponseEntity.noContent().build();

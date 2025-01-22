@@ -5,6 +5,7 @@ import com.att.acceptance.movie_theater.entity.RoleEnum;
 import com.att.acceptance.movie_theater.service.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -14,7 +15,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping(value = "/api/users", produces = MediaType.APPLICATION_JSON_VALUE)
 @Validated
 public class UserController {
 
@@ -44,7 +45,7 @@ public class UserController {
      * @return A page of users.
      */
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @GetMapping
+    @GetMapping(path = "/get-all-users")
     public ResponseEntity<Page<User>> getAllUsers(Pageable pageable) {
         Page<User> users = userService.getAllUsers(pageable);
         return ResponseEntity.ok(users);
@@ -57,7 +58,7 @@ public class UserController {
      * @return The user.
      */
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @GetMapping("/{id}")
+    @GetMapping(path = "/get-single-user/{id}")
     public ResponseEntity<User> getUserById(@PathVariable @Min(1) Long id) {
         User user = userService.getUserById(id);
         return ResponseEntity.ok(user);
@@ -69,9 +70,36 @@ public class UserController {
      * @param id The user ID.
      */
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    @DeleteMapping("/{id}")
+    @DeleteMapping(path = "/delete/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable @Min(1) Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+    
+    /**
+     * Update a user by ID. (Admin only)
+     *
+     * @param id The user ID.
+     * @param user The updated user details.
+     * @return The updated user.
+     */
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PutMapping(path = "/update/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User user) {
+        User updatedUser = userService.updateUser(id, user);
+        return ResponseEntity.ok(updatedUser);
+    }
+    
+    /**
+     * Assign a role to a user.
+     *
+     * @param userId the user ID
+     * @param role the role to assign
+     */
+    @PostMapping("/{userId}/roles/{role}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> assignRoleToUser(@PathVariable Long userId, @PathVariable RoleEnum role) {
+        userService.assignRoleToUser(userId, role);
+        return ResponseEntity.ok().build();
     }
 }

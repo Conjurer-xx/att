@@ -68,4 +68,38 @@ public class UserService {
                 new IllegalArgumentException("User with ID " + userId + " does not exist."));
         userRepository.deleteById(userId);
     }
+    
+    /**
+     * Update a user's role details.
+     * 
+     * @param userId The user ID.
+     * @param role The role to assign to the user.
+     */
+    @Transactional
+    public void assignRoleToUser(Long userId, RoleEnum role) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
+        user.addRole(role);
+        userRepository.save(user);
+    }
+    
+	/**
+	 * Update a user's details.
+	 * 
+	 * @param userId      The user ID.
+	 * @param updatedUser The updated user details.
+	 * @return The updated user.
+	 */
+	@Transactional
+	public User updateUser(Long userId, User updatedUser) {
+		User existingUser = userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("User with ID " + userId + " does not exist."));
+
+		existingUser.setName(updatedUser.getName());
+		existingUser.setEmail(updatedUser.getEmail());
+		existingUser.setRoles(updatedUser.getRoles());
+		existingUser.setPassword(updatedUser.getPassword());
+
+		return userRepository.save(existingUser);
+	}
 }

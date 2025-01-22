@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -73,6 +74,33 @@ public class BookingService {
         bookingRepository.findById(bookingId).orElseThrow(() ->
                 new IllegalArgumentException("Booking with ID " + bookingId + " does not exist."));
         bookingRepository.deleteById(bookingId);
+    }
+    
+
+	/**
+	 * Update a booking by its ID.
+	 *
+	 * @param id             The booking ID.
+	 * @param updatedBooking The updated booking details.
+	 * @return The updated booking.
+	 */
+    @Transactional
+    public Booking updateBooking(Long id, Booking updatedBooking) {
+        Optional<Booking> existingBookingOptional = bookingRepository.findById(id);
+
+        if (existingBookingOptional.isEmpty()) {
+            throw new IllegalArgumentException("Booking with ID " + id + " not found.");
+        }
+
+        Booking existingBooking = existingBookingOptional.get();
+
+        // Update the necessary fields of the existing booking
+        existingBooking.setSeat(updatedBooking.getSeat());
+        existingBooking.setShowtime(updatedBooking.getShowtime());
+        existingBooking.setPrice(updatedBooking.getPrice());
+
+        // Save and return the updated booking
+        return bookingRepository.save(existingBooking);
     }
     
     /**

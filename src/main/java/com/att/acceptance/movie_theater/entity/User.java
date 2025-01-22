@@ -91,6 +91,18 @@ public class User {
     public void setPassword(String password) {
         this.password = password;
     }
+    
+    public void addRole(RoleEnum role) {
+        roles.add(role);
+    }
+
+    public void removeRole(RoleEnum role) {
+        roles.remove(role);
+    }
+
+    public void clearRoles() {
+        roles.clear();
+    }
 
 
     /**
