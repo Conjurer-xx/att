@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -19,6 +20,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(description = "Unique identifier for the user.")
     private Long id;
 
     /**
@@ -27,6 +29,7 @@ public class User {
     @NotBlank(message = "Name is required.")
     @Size(min = 2, max = 50, message = "Name must be between 2 and 50 characters")
     @Column(nullable = false)
+    @Schema(description = "The full name of the user.")
     private String name;
 
     /**
@@ -35,6 +38,7 @@ public class User {
     @Email(message = "Invalid email format.")
     @NotBlank(message = "Email is required.")
     @Column(nullable = false, unique = true)
+    @Schema(description = "The email address of the user.")
     private String email;
 
     /**
@@ -42,6 +46,7 @@ public class User {
      */
     @NotBlank(message = "Password is required.")
     @Column(nullable = false)
+    @Schema(description = "The password for the user account.")
     private String password;
 
     /**
@@ -56,6 +61,7 @@ public class User {
     
     @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
+    @Schema(description = "The roles assigned to the user.")
     private Set<RoleEnum> roles = new HashSet<>();
     
     // Getters and Setters

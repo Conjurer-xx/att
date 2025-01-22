@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.AssertTrue;
 import java.time.LocalDateTime;
 import java.util.List;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Entity representing a Showtime in the movie theater system.
@@ -20,27 +21,33 @@ public class Showtime {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(description = "Unique identifier for the showtime.")
     private Long id;
 
     @ManyToOne
     @JoinColumn(name = "movie_id", nullable = false)
     @NotNull(message = "Movie is required")
+    @Schema(description = "The movie being shown.")
     private Movie movie;
 
     @ManyToOne
     @JoinColumn(name = "theater_id", nullable = false)
     @NotNull(message = "Theater is required")
+    @Schema(description = "The theater in which the movie is shown.")
     private Theater theater;
 
     @Column(name = "start_time", nullable = false)
     @NotNull(message = "Start time is required")
+    @Schema(description = "The start time of the showtime in the theater in UTC.")
     private LocalDateTime startTime;
 
     @Column(name = "end_time", nullable = false)
     @NotNull(message = "End time is required")
+    @Schema(description = "The end time of the showtime in the theater in UTC.")
     private LocalDateTime endTime;
 
     @OneToMany(mappedBy = "showtime", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Schema(description = "The bookings made for this showtime.")
     private List<Booking> bookings;
 
     @AssertTrue(message = "Start time must be before end time")

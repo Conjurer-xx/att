@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Entity representing the availability of a seat for a specific showtime.
@@ -25,12 +26,14 @@ public class SeatAvailability {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(description = "Unique identifier for the seat availability record.")
     private Long id;
 
     /**
      * The seat associated with this availability record.
      */
     @OneToOne(mappedBy = "seatAvailability", cascade = CascadeType.ALL)
+    @Schema(description = "The seat associated with this availability record.")
     private Seat seat; 
 
     /**
@@ -38,12 +41,14 @@ public class SeatAvailability {
      */
     @ManyToOne
     @JoinColumn(name = "showtime_id", nullable = false)
+    @Schema(description = "The showtime for which this seat availability is tracked.")
     private Showtime showtime;
 
     /**
      * The unique seat number for this record.
      */
     @Column(nullable = false)
+    @Schema(description = "The unique seat number for this record.")
     private String seatNumber;
 
     /**
@@ -51,6 +56,7 @@ public class SeatAvailability {
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Schema(description = "The availability status of the seat.")
     private AvailabilityStatusEnum status; 
 
     // Getters and Setters

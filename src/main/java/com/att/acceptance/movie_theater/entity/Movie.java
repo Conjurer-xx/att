@@ -15,6 +15,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 @Entity
 @Table(name = "movies")
@@ -22,27 +23,34 @@ public class Movie {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(description = "Unique identifier of the Movie.", example = "1")
     private Long id;
 
     @NotBlank(message = "Title is required.")
     @Size(min = 3, max = 255, message = "Title must be between 3 and 255 characters")
+    @Schema(description = "Title of the Movie.", example = "The Shawshank Redemption")
     private String title;
 
     @NotBlank(message = "Genre is required.")
+    @Size(min = 3, max = 50, message = "Genre must be between 3 and 50 characters")
     private String genre;
 
     @NotNull(message = "Duration is required.")
     @Min(value = 1, message = "Duration must be at least 1 minute.")
+    @Schema(description = "Duration of the Movie in minutes.", example = "142")
     private Integer duration; 
 
     @NotBlank(message = "Rating is required.")
+    @Schema(description = "Rating of the Movie.", example = "R")
     private String rating; 
 
     @NotNull(message = "Release year is required.")
-    @Min(value = 1900, message = "Release year must be after 1900.")    
+    @Min(value = 1900, message = "Release year must be after 1900.")  
+    @Schema(description = "Release year of the Movie.", example = "1994")
     private Integer releaseYear; 
 
     @OneToMany(mappedBy = "movie", cascade = CascadeType.ALL)
+    @Schema(description = "List of Showtimes for the Movie.")
     private Set<Showtime> showtimes = new HashSet<>(); 
 
     // Getters and Setters

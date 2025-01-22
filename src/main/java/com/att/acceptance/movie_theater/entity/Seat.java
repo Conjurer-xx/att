@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.Objects;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Entity representing a Seat in the movie theater system.
@@ -15,10 +16,13 @@ public class Seat {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(description = "Unique identifier for the seat.")
     private Long id;
     
     @ManyToOne
     @JoinColumn(name = "theater_id", nullable = false)
+    @NotBlank(message = "Theater is required")
+    @Schema(description = "The theater to which the seat belongs.")
     private Theater theater;
 
 
@@ -29,6 +33,7 @@ public class Seat {
     @NotBlank(message = "Seat number is required.")
     @Size(max = 10, message = "Seat number must not exceed 10 characters.")
     @Column(nullable = false, unique = true)
+    @Schema(description = "Unique identifier for the seat.")
     private String seatNumber;
 
     /**
@@ -36,6 +41,7 @@ public class Seat {
      * This is a one-to-one relationship with the SeatAvailability entity.
      */
     @OneToOne(mappedBy = "seat", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Schema(description = "The availability status of the seat.")
     private SeatAvailability seatAvailability; 
 
     // Getters and Setters
