@@ -11,6 +11,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 
@@ -32,6 +39,12 @@ public class UserController {
      * @param user The user to register.
      * @return The registered user.
      */
+    @Operation(summary = "Register a new user", description = "Allows a new user to register in the system.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User registered successfully", 
+                    content = @Content(schema = @Schema(implementation = User.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid input")
+    })
     @PostMapping("/register")
     public ResponseEntity<User> registerUser(@Valid @RequestBody User user) {
         User registeredUser = userService.registerUser(user, RoleEnum.ROLE_CUSTOMER);
@@ -44,6 +57,10 @@ public class UserController {
      * @param pageable Pagination details.
      * @return A page of users.
      */
+    @Operation(summary = "Get all users", description = "Retrieve all users with pagination.")
+	@ApiResponses({
+			@ApiResponse(responseCode = "200", description = "Users retrieved successfully", content = @Content(schema = @Schema(implementation = Page.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthorized") })
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping(path = "/get-all-users")
     public ResponseEntity<Page<User>> getAllUsers(Pageable pageable) {
@@ -57,6 +74,13 @@ public class UserController {
      * @param id The user ID.
      * @return The user.
      */
+    @Operation(summary = "Get a user by ID", description = "Retrieve a user by ID.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User retrieved successfully", 
+                    content = @Content(schema = @Schema(implementation = User.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+            })
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping(path = "/get-single-user/{id}")
     public ResponseEntity<User> getUserById(@PathVariable @Min(1) Long id) {
@@ -69,6 +93,10 @@ public class UserController {
      *
      * @param id The user ID.
      */
+    @Operation(summary = "Delete a user by ID", description = "Delete a user by ID. Admin only.")
+	@ApiResponses({ @ApiResponse(responseCode = "204", description = "User deleted successfully"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "User not found") })
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping(path = "/delete/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable @Min(1) Long id) {
@@ -83,6 +111,12 @@ public class UserController {
      * @param user The updated user details.
      * @return The updated user.
      */
+    @Operation(summary = "Update a user by ID", description = "Update a user by ID. Admin only.")
+        @ApiResponses({ @ApiResponse(responseCode = "200", description = "User updated successfully", content=@Content(schema=@Schema(implementation=User.class))),
+		@ApiResponse(responseCode="401",description="Unauthorized"),@ApiResponse(responseCode="404",description="User not found"),
+        @ApiResponse(responseCode="400",description="Invalid input"),
+        @ApiResponse(responseCode="500",description="Internal server error")
+		})        
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PutMapping(path = "/update/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<User> updateUser(@PathVariable Long id, @Valid @RequestBody User user) {
@@ -96,6 +130,10 @@ public class UserController {
      * @param userId the user ID
      * @param role the role to assign
      */
+    @Operation(summary = "Assign a role to a user", description = "Assign a role to a user. Admin only.")
+	@ApiResponses({ @ApiResponse(responseCode = "200", description = "Role assigned successfully"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "User not found") })
     @PostMapping("/{userId}/roles/{role}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> assignRoleToUser(@PathVariable Long userId, @PathVariable RoleEnum role) {
